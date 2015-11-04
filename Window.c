@@ -2,7 +2,7 @@
 
 File: Window.c
 
-Version: <1.0>
+Version: <1.1>
 
 Disclaimer: IMPORTANT:  This Apple software is supplied to you by Apple
 Computer, Inc. ("Apple") in consideration of your agreement to the
@@ -42,10 +42,10 @@ AND WHETHER UNDER THEORY OF CONTRACT, TORT (INCLUDING NEGLIGENCE),
 STRICT LIABILITY OR OTHERWISE, EVEN IF APPLE HAS BEEN ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 
-Copyright © 2004 Apple Computer, Inc., All Rights Reserved
+Copyright © 2004-2007 Apple Inc., All Rights Reserved
 
 */
-// This code will run on Mac OS X 10.2 (or later) ONLY!!!
+// This code will run on Mac OS X 10.5 (or later) ONLY!!!
 
 #include "Window.h"
 #include "MenuHandler.h"
@@ -62,6 +62,8 @@ enum {
 	kDefaultUnicodeBufferSize = 20,
 	kGlyphBurstLines = 20
 };
+
+static const HIViewID	myHIViewID = { 'aWnd', 0 };
 
 // ------------------------------------------------------------------------------
 // Data Structures
@@ -88,6 +90,9 @@ static WindowListItem *gWindowList = NULL;
 
 static OSStatus InstallWindowEventHandlers( WindowRef windowRef );
 
+static OSStatus HandleViewEvent( EventHandlerCallRef inHandlerCallRef,
+	EventRef inEvent, void *inUserData );
+	
 static OSStatus HandleKeyEvent( EventHandlerCallRef inHandlerCallRef,
 	EventRef inEvent, void *inUserData );
 	
@@ -100,9 +105,9 @@ static OSStatus DrawWindow( WindowRef windowRef );
 
 static void AddWindowToList( WindowRef windowRef );
 
-static OSStatus DrawSingleLine( DrawContextStruct *context, Rect windowBounds );
+static OSStatus DrawSingleLine( DrawContextStruct *context );
 
-static OSStatus DrawGlyphBurst( DrawContextStruct *context, Rect windowBounds );
+static OSStatus DrawGlyphBurst( DrawContextStruct *context );
 
 static OSStatus ResizeDemoWindow( EventRef inEvent, WindowRef windowRef );
 
@@ -115,8 +120,8 @@ static void CloseDemoWindow( WindowRef windowRef );
 extern
 OSStatus NewDemoWindow( void )
 {
-	OSStatus	err;
-	WindowRef 	windowRef;
+	OSStatus				err;
+	WindowRef				windowRef;
 
 	// create the window from the interface builder NIB file
 	err = CreateWindowFromNib(gMainNibRef, CFSTR("MainWindow"), &windowRef);
@@ -158,16 +163,11 @@ OSStatus RedrawWindows( void )
 	// search through the window list
 	while( currentItem != NULL )
 	{
-		// draw the window
-		err = DrawWindow( currentItem->windowRef );
-		require_noerr( err, RedrawWindows_err );
+		HIViewSetNeedsDisplay( ((DrawContextStruct*)GetWRefCon(currentItem->windowRef))->viewRef, true);
 		
 		// grab the next context
 		currentItem = currentItem->nextItem;
-		
 	}
-
-RedrawWindows_err:
 
 	return err;
 
@@ -185,11 +185,13 @@ OSStatus CloseAllWindows( void )
 	// run through the window list
 	while( currentItem != NULL )
 	{
+		WindowListItem	*nextItem = currentItem->nextItem;
+		
 		// close the window
 		CloseDemoWindow( currentItem->windowRef );
 		
 		// move on to the next item
-		currentItem = currentItem->nextItem;
+		currentItem = nextItem;
 	}
 
 	return noErr;
@@ -227,13 +229,11 @@ OSStatus InvalidateAndRedrawWindows( void )
 			}
 		
 			// nifty. Now, we need to redraw the window
-			err = DrawWindow( currentItem->windowRef  );
-			require_noerr( err, InvalidateAndRedrawWindows_err );
+			HIViewSetNeedsDisplay( ((DrawContextStruct*)GetWRefCon(currentItem->windowRef))->viewRef, true);
 		}
 		
 		// grab the next context
 		currentItem = currentItem->nextItem;
-		
 	}
 
 InvalidateAndRedrawWindows_err:
@@ -271,7 +271,6 @@ void CloseDemoWindow(
 				gWindowList = currentItem->nextItem;
 			}
 			
-			
 			// free up the current item
 			free( currentItem );
 			break;
@@ -288,20 +287,7 @@ void CloseDemoWindow(
 	// if we have a context, then we need to make sure to dispose of everything
 	// that's in the context before we free the context.
 	if ( windowContext != NULL )
-	{
-	
-		// stop the CGContext for the port
-		if ( windowContext->cgContext != NULL )
-		{	
-			CGrafPtr	windowPort;
-		
-			// get the window port for the window
-			windowPort = GetWindowPort( windowRef );
-					
-			verify_noerr( 
-				QDEndCGContext( windowPort, &windowContext->cgContext ) );
-		}
-		
+	{		
 		// dispose of the text layout object
 		if ( windowContext->layoutObject != NULL ) 
 		{
@@ -317,9 +303,7 @@ void CloseDemoWindow(
 		
 		// free the context itself
 		free( windowContext );
-		
 	}
-
 }
 
 // ------------------------------------------------------------------------------
@@ -360,15 +344,14 @@ OSStatus ResizeDemoWindow(
 	Rect				oldBounds;
 	short				newWidth;
 	short				newLength;
+	HIViewRef			myHIViewRef;
 	
 	// get the event parameter which will tell us the new size
-	err = GetEventParameter( inEvent, kEventParamCurrentBounds, typeQDRectangle,
-		NULL, sizeof( Rect ), NULL, &newBounds );
+	err = GetEventParameter( inEvent, kEventParamCurrentBounds, typeQDRectangle, NULL, sizeof( Rect ), NULL, &newBounds );
 	require_noerr( err, ResizeDemoWindow_err );
 
 	// get the old bounds, just to see if we don't need to draw anything
-	err = GetEventParameter( inEvent, kEventParamPreviousBounds,  typeQDRectangle,
-		NULL, sizeof( Rect ), NULL, &oldBounds );
+	err = GetEventParameter( inEvent, kEventParamPreviousBounds,  typeQDRectangle, NULL, sizeof( Rect ), NULL, &oldBounds );
 	require_noerr( err, ResizeDemoWindow_err );		
 	
 	// calculate the new width and length
@@ -390,6 +373,9 @@ OSStatus ResizeDemoWindow(
 		
 		// get the window port
 		windowPort = GetWindowPort( windowRef );
+		
+		if (windowContext->cgContext == NULL)
+			return err;
 			
 		// okay, so this is really, really lame. I'm going to get rid of
 		// the current cg context and get a new one. This is because I
@@ -402,13 +388,6 @@ OSStatus ResizeDemoWindow(
 		// out what's going wrong with the Quickdraw clipping regions.
 		
 		// dispose of the context
-		err = QDEndCGContext( windowPort, &windowContext->cgContext );
-		require_noerr( err, ResizeDemoWindow_err );
-				
-		// re-grab the cgContext from the port
-		err = QDBeginCGContext( windowPort, &windowContext->cgContext );
-		require_noerr( err, ResizeDemoWindow_err );
-		
 		// make sure that the context is re-set in the ATSUI object
 		if ( windowContext->layoutObject != NULL )
 		{
@@ -424,9 +403,8 @@ OSStatus ResizeDemoWindow(
 #endif
 		
 		// redraw the context
-		err = DrawWindow( windowRef );
-		require_noerr( err, ResizeDemoWindow_err );
-		
+		HIViewFindByID(HIViewGetRoot(windowRef), myHIViewID, &myHIViewRef);
+		HIViewSetNeedsDisplay( myHIViewRef, true);
 	}
 
 ResizeDemoWindow_err:
@@ -440,47 +418,44 @@ ResizeDemoWindow_err:
 // ------------------------------------------------------------------------------
 
 static
-OSStatus InstallWindowEventHandlers(
-	WindowRef windowRef )
+OSStatus InstallWindowEventHandlers( WindowRef windowRef )
 {
-	static const EventTypeSpec 	inputEventSpec[] = 
-		{ 	{ kEventClassTextInput, kEventTextInputUnicodeForKeyEvent } };
+	static const EventTypeSpec 	inputEventSpec[] = { 
+		{ kEventClassTextInput, kEventTextInputUnicodeForKeyEvent } };
 		
-	static const EventTypeSpec	windowEventSpec[] =
-		{	{ kEventClassWindow, kEventWindowClosed },
-			{ kEventClassWindow, kEventWindowBoundsChanged },
-			{ kEventClassWindow, kEventWindowDrawContent } };
-		
+	static const EventTypeSpec	windowEventSpec[] = {
+		{ kEventClassWindow, kEventWindowClosed },
+		{ kEventClassWindow, kEventWindowBoundsChanged } };
+
+	static const EventTypeSpec	viewEventSpec[] = {
+		{ kEventClassControl,	kEventControlDraw } };
+
 	OSStatus 			err;
 	DrawContextStruct	*newContext;
-	CGrafPtr			windowPort;
-	
+
 	// allocate a new draw context
 	newContext = calloc( 1, sizeof( DrawContextStruct ) );
 	require_action( newContext != NULL, InstallWindowEventHandlers_err,
 		err = paramErr );
-		
-	// get the window port for the window
-	windowPort = GetWindowPort( windowRef );
-		
-	// grab the cgContext from the port
-	err = QDBeginCGContext( windowPort, &newContext->cgContext );
-	require_noerr( err, InstallWindowEventHandlersEvent_err );
+	
+	HIViewFindByID(HIViewGetRoot(windowRef), myHIViewID, &newContext->viewRef);
+	newContext->windowRef = windowRef;
+	
 	
 	// install a key event handler
-	err = InstallWindowEventHandler( windowRef,
-		NewEventHandlerUPP( HandleKeyEvent ), GetEventTypeCount( inputEventSpec ), 
-		inputEventSpec, (void *) windowRef, NULL );
+	err = InstallWindowEventHandler( windowRef, NewEventHandlerUPP( HandleKeyEvent ), GetEventTypeCount( inputEventSpec ), inputEventSpec, (void *) newContext, NULL );
 	require_noerr( err, InstallWindowEventHandlersEvent_err );
 	
 	// install a general window event handler
-	err = InstallWindowEventHandler( windowRef,
-		NewEventHandlerUPP( HandleWindowEvent ), GetEventTypeCount( windowEventSpec ), 
-		windowEventSpec, (void *) windowRef, NULL );
+	err = InstallWindowEventHandler( windowRef, NewEventHandlerUPP( HandleWindowEvent ), GetEventTypeCount( windowEventSpec ), windowEventSpec, (void *) newContext, NULL );
+	require_noerr( err, InstallWindowEventHandlersEvent_err );
+	
+	// install handler for the HI view
+	err = HIViewInstallEventHandler( newContext->viewRef, NewEventHandlerUPP( HandleViewEvent ), GetEventTypeCount( viewEventSpec ), viewEventSpec, (void *) newContext, NULL);
 	require_noerr( err, InstallWindowEventHandlersEvent_err );
 	
 	// also, set the context as the window refcon
-	SetWRefCon( windowRef, (long) newContext );
+	SetWRefCon( windowRef, (SRefCon) newContext );
 
 	return noErr;
 	
@@ -496,6 +471,41 @@ InstallWindowEventHandlers_err:
 }
 
 // ------------------------------------------------------------------------------
+// HandleViewEvent												[INTERNAL]
+// ------------------------------------------------------------------------------
+
+static
+OSStatus HandleViewEvent(
+	EventHandlerCallRef inHandlerCallRef,
+	EventRef 			inEvent, 
+	void 				*inUserData )
+{
+#pragma unused( inHandlerCallRef )
+	OSStatus			err = eventNotHandledErr;
+	DrawContextStruct	*context = inUserData;
+
+    verify_noerr( GetEventParameter(inEvent, kEventParamCGContextRef, typeCGContextRef, NULL, sizeof(CGContextRef), NULL, &context->cgContext) );
+	HIViewGetBounds(context->viewRef, &context->bounds);
+	CGContextTranslateCTM(context->cgContext, 0, context->bounds.size.height);
+	CGContextScaleCTM(context->cgContext, 1.0, -1.0);
+
+
+	switch ( GetEventKind( inEvent ) ) {
+		case kEventControlDraw:
+		{					
+			// redraw  the context
+			DrawWindow( context->windowRef );
+			break;
+		}
+		default:
+			break;
+	};
+	
+	return err;
+			
+}
+
+// ------------------------------------------------------------------------------
 // HandleWindowEvent												[INTERNAL]
 // ------------------------------------------------------------------------------
 
@@ -508,29 +518,18 @@ OSStatus HandleWindowEvent(
 #pragma unused( inHandlerCallRef )
 
 	OSStatus 	err = eventNotHandledErr;
-	WindowRef	windowRef;
+	DrawContextStruct	*context=inUserData;
 
-	// cast away the user data to the context for easier handling
-	windowRef = (WindowRef) inUserData;
-	check( windowRef != NULL );
-	
 	// pass the control off to our handlers based on event kind
 	switch ( GetEventKind( inEvent ) )
 	{
 		case kEventWindowClosed:		
-			CloseDemoWindow( windowRef );
+			CloseDemoWindow( context->windowRef );
 			break;
 			
 		case kEventWindowBoundsChanged:
-			ResizeDemoWindow( inEvent, windowRef );
+			ResizeDemoWindow( inEvent, context->windowRef );
 			break;
-			
-		case kEventWindowDrawContent:
-		{					
-			// redraw  the context
-			DrawWindow( windowRef );
-			break;
-		}
 			
 		default:
 			break;
@@ -556,17 +555,9 @@ OSStatus HandleKeyEvent(
 
 	OSStatus			err;
 	EventRef			keyboardEvent;
-	UInt32				dataSize;
+	ByteCount			dataSize;
 	UniCharCount		numNewCharacters;
-	WindowRef			windowRef;
-	DrawContextStruct	*context;
-	
-	// cast away the user data to the context for easier handling
-	windowRef = (WindowRef) inUserData;
-	
-	// get the context from windowRef		
-	context = (DrawContextStruct *) GetWRefCon( windowRef );
-	check( context != NULL );
+	DrawContextStruct	*context = inUserData;
 	
 	// get the keyboard event
 	err = GetEventParameter( inEvent, kEventParamTextInputSendKeyboardEvent,
@@ -635,15 +626,14 @@ OSStatus HandleKeyEvent(
 		err = ATSUTextInserted( context->layoutObject,
 			context->characterCount, numNewCharacters );
 		require_noerr( err, HandleKeyEvent_err );
-		
 	}
 	
 	// increment the character count stored in the context
 	context->characterCount += numNewCharacters;
 
-	// draw the context
-	err = DrawWindow( windowRef );
-	require_noerr( err, HandleKeyEvent_err );
+	// send message to draw the context
+	HIViewSetNeedsDisplay( context->viewRef, true);
+
 
 HandleKeyEvent_err:
 
@@ -659,12 +649,15 @@ static
 OSStatus AddNewTextLayoutToContext( 
 	DrawContextStruct	*context )
 {
-	OSStatus err;
-	ATSUAttributeTag tag;
-	ByteCount valueSize;
-	ATSUAttributeValuePtr valuePtr;
-	UniCharCount runLength = kATSUToTextEnd;
+	OSStatus				err = noErr;
+	ATSUAttributeTag		tag;
+	ByteCount				valueSize;
+	ATSUAttributeValuePtr	valuePtr;
+	UniCharCount			runLength = kATSUToTextEnd;
 	
+	if (context->cgContext == NULL)
+		return err;
+
 	// create a text layout object
 	err = ATSUCreateTextLayoutWithTextPtr( context->textBuffer,
 		kATSUFromTextBeginning, kATSUToTextEnd, context->characterCount, 1,
@@ -675,8 +668,7 @@ OSStatus AddNewTextLayoutToContext(
 	tag = kATSUCGContextTag;
 	valueSize = sizeof( CGContextRef );
 	valuePtr = &context->cgContext;
-	err = ATSUSetLayoutControls( context->layoutObject, 1, &tag, &valueSize,
-		&valuePtr );
+	err = ATSUSetLayoutControls( context->layoutObject, 1, &tag, &valueSize, &valuePtr );
 	require_noerr( err, AddNewTextLayoutToContext_err );
 	
 	// set font substitution for the new layout	
@@ -712,7 +704,6 @@ OSStatus AddNewTextLayoutToContext(
 			
 	}
 
-
 AddNewTextLayoutToContext_err:
 	
 	return err;
@@ -728,55 +719,23 @@ OSStatus DrawWindow(
 {
 	OSStatus 				err = noErr;
 	DrawContextStruct		*context;
-	
+		
 	// get the context from windowRef		
 	context = (DrawContextStruct *) GetWRefCon( windowRef );
-	check( context != NULL );
-	
+
+	// skip any drawing if the context has not yet been initialized
+	if ( context->cgContext == NULL )
+		return err;
+
+
 	// we only need to do this if there are characters in the buffer. If there
 	// aren't any characters, then there's nothing to draw.
 	if ( context->characterCount > 0 )
 	{	
-		CGRect 		cgRect;
-		CGrafPtr	windowPort;
-		Rect		windowBounds;
-		
-		// get the window port for the window
-		windowPort = GetWindowPort( windowRef );
-	
-		// sync the origins
-		SyncCGContextOriginWithPort( context->cgContext, windowPort );
-		
-		// get the bounds for the port
-		GetPortBounds( windowPort, &windowBounds );
-			
-		// now, we need to set the clipping region for the document. Let's 
-		cgRect = CGRectMake( windowBounds.left, windowBounds.top,
-			windowBounds.right, windowBounds.bottom );
-		
-#if BUGWORKAROUNDS
-		// reset the clipping region for the document. This should stop that
-		// silly bug which is causing stuff to draw into the window tilebar
-		CGContextClipToRect( context->cgContext, cgRect );
-#endif
-			
-		// save the current state
-		CGContextSaveGState(context->cgContext);
-		
-		// set a fill color in the CGContext. Make it white.
-		CGContextSetRGBFillColor( context->cgContext, 1.0, 1.0, 1.0, 1.0 );
-		
-		// fill the window rect to clear it out
-		CGContextFillRect( context->cgContext, cgRect );
-		
-		// restore the old state
-		CGContextRestoreGState( context->cgContext );
-		
-		
 		// if there isn't a layout object, then we need to add one to the
 		// context
 		if ( context->layoutObject == NULL )
-		{
+		{			
 			err = AddNewTextLayoutToContext( context );
 			require_noerr( err, DrawContext_err );
 		}
@@ -786,20 +745,19 @@ OSStatus DrawWindow(
 		switch ( gOptionsMenuSelection )
 		{
 			case kOptionsMenuTextBurst:
-				err = DrawGlyphBurst( context, windowBounds );
+				err = DrawGlyphBurst( context );
 				require_noerr( err, DrawContext_err );
 				break;
 			
 			case kOptionsMenuItemNone:
 			default:
-				err = DrawSingleLine( context, windowBounds );
+				err = DrawSingleLine( context );
 				require_noerr( err, DrawContext_err );
 				break;
 		}
 
 		// flush the CGContext
 		CGContextFlush( context->cgContext );
-
 	}
 		
 DrawContext_err:
@@ -814,8 +772,7 @@ DrawContext_err:
 
 static
 OSStatus DrawSingleLine(
-	DrawContextStruct *context,
-	Rect			  windowBounds )
+	DrawContextStruct *context )
 {
 	OSStatus				err;
 	ATSTrapezoid			glyphBounds;
@@ -825,13 +782,15 @@ OSStatus DrawSingleLine(
 	ATSUTextMeasurement		yPosition;
 	
 	// set the xPosition and the yPosition as the boundries. 
-	xPosition = windowBounds.left << 16;
-	yPosition = windowBounds.bottom << 16;
+	xPosition = context->bounds.origin.x;
+	yPosition = context->bounds.size.height;
+	
+	xPosition = xPosition << 16;
+	yPosition = yPosition << 16;
 	
 	// we need to calculate where the line should start, so get the height of the
 	// line.
-	err = ATSUGetGlyphBounds( context->layoutObject, 0, 0, kATSUFromTextBeginning,
-		kATSUToTextEnd, kATSUseCaretOrigins, 1, &glyphBounds, &numGlyphBounds );
+	err = ATSUGetGlyphBounds( context->layoutObject, 0, 0, kATSUFromTextBeginning, kATSUToTextEnd, kATSUseCaretOrigins, 1, &glyphBounds, &numGlyphBounds );
 	require_noerr( err, DrawSingleLine_err );
 	
 	lineHeight = glyphBounds.lowerRight.y - glyphBounds.upperRight.y;
@@ -840,8 +799,7 @@ OSStatus DrawSingleLine(
 	yPosition -= lineHeight;
 	
 	// draw!
-	err = ATSUDrawText( context->layoutObject, kATSUFromTextBeginning,
-		kATSUToTextEnd, xPosition, yPosition );
+	err = ATSUDrawText( context->layoutObject, kATSUFromTextBeginning, kATSUToTextEnd, xPosition, yPosition );
 	check_noerr( err );
 	
 DrawSingleLine_err:
@@ -855,8 +813,7 @@ DrawSingleLine_err:
 
 static
 OSStatus DrawGlyphBurst(
-	DrawContextStruct 	*context,
-	Rect				windowBounds )
+	DrawContextStruct 	*context )
 {
 	OSStatus				err;
 	ATSUTextMeasurement		xPosition;
@@ -874,20 +831,21 @@ OSStatus DrawGlyphBurst(
 	numDegreesPerLine = currentDegree / kGlyphBurstLines;
 	
 	// set the xPosition and the yPosition at the center of the window
-	xPosition = ( ( windowBounds.right - windowBounds.left ) / 2 ) << 16;
-	yPosition = ( ( windowBounds.bottom - windowBounds.top ) / 2 ) << 16;
+	xPosition = ( context->bounds.size.width / 2 );
+	yPosition = ( context->bounds.size.height / 2 );
 		
+	xPosition = xPosition << 16;
+	yPosition = yPosition << 16;
+	
 	// loop through until all lines are drawn
 	while ( currentDegree > 0 )
 	{
 		// set the current rotation degree in the text layout object
-		err = ATSUSetLayoutControls( context->layoutObject, 1, &tag,
-			&valueSize, &valuePtr );
+		err = ATSUSetLayoutControls( context->layoutObject, 1, &tag, &valueSize, &valuePtr );
 		require_noerr( err, DrawGlyphBurst_err );
 		
 		// draw!
-		err = ATSUDrawText( context->layoutObject, kATSUFromTextBeginning,
-			kATSUToTextEnd, xPosition, yPosition );
+		err = ATSUDrawText( context->layoutObject, kATSUFromTextBeginning, kATSUToTextEnd, xPosition, yPosition );
 			
 		// decrement the current degree
 		currentDegree -= numDegreesPerLine;
@@ -895,8 +853,7 @@ OSStatus DrawGlyphBurst(
 	
 	// set the current degree back to zero, in case it wasn't
 	currentDegree = 0;
-	err = ATSUSetLayoutControls( context->layoutObject, 1, &tag,
-		&valueSize, &valuePtr );
+	err = ATSUSetLayoutControls( context->layoutObject, 1, &tag, &valueSize, &valuePtr );
 	require_noerr( err, DrawGlyphBurst_err );	
 		
 DrawGlyphBurst_err:

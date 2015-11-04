@@ -2,7 +2,7 @@
 
 File: MenuHandler.h
 
-Version: <1.0>
+Version: <1.1>
 
 Disclaimer: IMPORTANT:  This Apple software is supplied to you by Apple
 Computer, Inc. ("Apple") in consideration of your agreement to the
@@ -42,10 +42,10 @@ AND WHETHER UNDER THEORY OF CONTRACT, TORT (INCLUDING NEGLIGENCE),
 STRICT LIABILITY OR OTHERWISE, EVEN IF APPLE HAS BEEN ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 
-Copyright © 2004 Apple Computer, Inc., All Rights Reserved
+Copyright © 2004-2007 Apple Inc., All Rights Reserved
 
 */
-// This code will run on Mac OS X 10.2 (or later) ONLY!!!
+// This code will run on Mac OS X 10.5 (or later) ONLY!!!
 
 // ------------------------------------------------------------------------------
 // Global Variables

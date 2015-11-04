@@ -4,7 +4,7 @@ File: ManuHandler.c
 
 Abstract: Basic menu and event handling code.
 
-Version: <1.0>
+Version: <1.1>
 
 Disclaimer: IMPORTANT:  This Apple software is supplied to you by Apple
 Computer, Inc. ("Apple") in consideration of your agreement to the
@@ -44,10 +44,10 @@ AND WHETHER UNDER THEORY OF CONTRACT, TORT (INCLUDING NEGLIGENCE),
 STRICT LIABILITY OR OTHERWISE, EVEN IF APPLE HAS BEEN ADVISED OF THE
 POSSIBILITY OF SUCH DAMAGE.
 
-Copyright © 2004 Apple Computer, Inc., All Rights Reserved
+Copyright © 2004-2007 Apple Inc., All Rights Reserved
 
-*/ 
-// This code will run on Mac OS X 10.2 (or later) ONLY!!!
+*/
+// This code will run on Mac OS X 10.5 (or later) ONLY!!!
 
 #include "Window.h"
 #include "HIElements.h"
@@ -57,8 +57,6 @@ Copyright © 2004 Apple Computer, Inc., All Rights Reserved
 // ------------------------------------------------------------------------------
 // Global Variables
 // ------------------------------------------------------------------------------
-
-static const char gInitialFont[] = "Geneva\0";
 
 ATSUStyle 	gGlobalStyle = NULL;
 SInt16		gOptionsMenuSelection = 0;
@@ -171,8 +169,6 @@ OSStatus InitializeFontsMenu(
 	OSStatus 		err;
 	UInt16	 		i;
 	UInt16			numItems;
-	Str255			menuString;
-	int				compareResult;
 	UInt16			sizeMenuSelection;
 	
 	// use the Carbon-ish font menu creation API to actually create the
@@ -184,17 +180,22 @@ OSStatus InitializeFontsMenu(
 	numItems = CountMenuItems( fontMenuRef );
 	
 	// loop through and look for Lucida Grande
-	for ( i = 0; i < numItems; i++ )
+	for ( i = 1; i <= numItems; i++ )
 	{
-		// get the menu item text
-		GetMenuItemText( fontMenuRef, i, menuString );
+		Boolean		compareResult = false;
+		CFStringRef	menuStringRef=NULL;
 		
-		// compare the menu item with the intial font
-		compareResult = strncmp( gInitialFont, (const char *)&menuString[1], 
-			strlen( gInitialFont ) );
-			
+		// get the menu item text
+		CopyMenuItemTextAsCFString( fontMenuRef, i, &menuStringRef );
+		if( menuStringRef ) {
+			// compare the menu item with the intial font
+			compareResult = CFEqual( menuStringRef, CFSTR("Helvetica") );		
+		
+			CFRelease( menuStringRef );
+		}
+		
 		// if they're equal, then we've got our font
-		if ( compareResult == 0 )
+		if ( compareResult  )
 		{
 			break;
 		}
@@ -569,6 +570,3 @@ SInt16 GetMenuSelection(
 	return i;
 	
 }
-	
-	
-	

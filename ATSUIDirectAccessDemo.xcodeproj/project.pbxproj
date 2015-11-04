@@ -129,7 +129,7 @@
 /* Begin PBXNativeTarget section */
 		8D0C4E890486CD37000505A6 /* ATSUIDirectAccessDemo */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = BEE96A2D0C5027F500A904B9 /* Build configuration list for PBXNativeTarget "ATSUIDirectAccessDemo" */;
+			buildConfigurationList = BEA160E40B7CD9E9000D6DB0 /* Build configuration list for PBXNativeTarget "ATSUIDirectAccessDemo" */;
 			buildPhases = (
 				8D0C4E8A0486CD37000505A6 /* Headers */,
 				8D0C4E8C0486CD37000505A6 /* Resources */,
@@ -153,10 +153,12 @@
 /* Begin PBXProject section */
 		20286C28FDCF999611CA2CEA /* Project object */ = {
 			isa = PBXProject;
-			buildConfigurationList = BEE96A310C5027F500A904B9 /* Build configuration list for PBXProject "ATSUIDirectAccessDemo" */;
+			buildConfigurationList = BEA160E00B7CD9E9000D6DB0 /* Build configuration list for PBXProject "ATSUIDirectAccessDemo" */;
+			compatibilityVersion = "Xcode 2.4";
 			hasScannedForEncodings = 1;
 			mainGroup = 20286C29FDCF999611CA2CEA /* ATSUIDirectAccessDemo */;
 			projectDirPath = "";
+			projectRoot = "";
 			targets = (
 				8D0C4E890486CD37000505A6 /* ATSUIDirectAccessDemo */,
 			);
@@ -196,7 +198,7 @@
 			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 1;
-			shellPath = /bin/tcsh;
+			shellPath = /bin/sh;
 			shellScript = "xcodebuild installsrc SRCROOT=$DSTROOT/Developer/Examples/ATSUI/Direct\\ Access\n/bin/rm -rf $DSTROOT/Developer/Examples/ATSUI/Direct\\ Access/build/\n/usr/sbin/chown root:wheel $DSTROOT/Developer/Examples/ATSUI/Direct\\ Access/*\n";
 		};
 /* End PBXShellScriptBuildPhase section */
@@ -235,149 +237,155 @@
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
-		BEE96A2E0C5027F500A904B9 /* Development */ = {
+		BEA160E10B7CD9E9000D6DB0 /* Development */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				COPY_PHASE_STRIP = NO;
-				DEBUGGING_SYMBOLS = YES;
-				FRAMEWORK_SEARCH_PATHS = "";
-				GCC_DYNAMIC_NO_PIC = NO;
-				GCC_ENABLE_FIX_AND_CONTINUE = YES;
-				GCC_ENABLE_TRIGRAPHS = NO;
-				GCC_GENERATE_DEBUGGING_SYMBOLS = YES;
-				GCC_OPTIMIZATION_LEVEL = 0;
-				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = ATSUIDirectAccessDemo_Prefix.pch;
-				GCC_WARN_ABOUT_MISSING_PROTOTYPES = NO;
-				GCC_WARN_FOUR_CHARACTER_CONSTANTS = NO;
-				GCC_WARN_UNKNOWN_PRAGMAS = NO;
-				HEADER_SEARCH_PATHS = "";
-				INFOPLIST_FILE = Info.plist;
-				LIBRARY_SEARCH_PATHS = "";
-				LIBRARY_STYLE = Static;
-				OPTIMIZATION_CFLAGS = "-O0";
-				OTHER_CFLAGS = "";
-				OTHER_LDFLAGS = "";
-				OTHER_REZFLAGS = "";
-				PRODUCT_NAME = ATSUIDirectAccessDemo;
-				SECTORDER_FLAGS = "";
-				SKIP_INSTALL = YES;
-				WARNING_CFLAGS = (
-					"-Wmost",
-					"-Wno-four-char-constants",
-					"-Wno-unknown-pragmas",
-				);
-				WRAPPER_EXTENSION = app;
-				ZERO_LINK = YES;
+				ARCHS = "$(NATIVE_ARCH)";
+				DSTROOT = "/tmp/$(PROJECT_NAME).dst";
+				MACOSX_DEPLOYMENT_TARGET = 10.5;
+				SDKROOT = /Developer/SDKs/MacOSX10.5.sdk;
+				VALID_ARCHS = "ppc7400 ppc970 i386 ppc";
 			};
 			name = Development;
 		};
-		BEE96A2F0C5027F500A904B9 /* Deployment */ = {
+		BEA160E20B7CD9E9000D6DB0 /* Deployment */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				COPY_PHASE_STRIP = YES;
-				FRAMEWORK_SEARCH_PATHS = "";
-				GCC_ENABLE_FIX_AND_CONTINUE = NO;
-				GCC_ENABLE_TRIGRAPHS = NO;
-				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
-				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = ATSUIDirectAccessDemo_Prefix.pch;
-				GCC_WARN_ABOUT_MISSING_PROTOTYPES = NO;
-				GCC_WARN_FOUR_CHARACTER_CONSTANTS = NO;
-				GCC_WARN_UNKNOWN_PRAGMAS = NO;
-				HEADER_SEARCH_PATHS = "";
-				INFOPLIST_FILE = Info.plist;
-				LIBRARY_SEARCH_PATHS = "";
-				LIBRARY_STYLE = Static;
-				OTHER_CFLAGS = "";
-				OTHER_LDFLAGS = "";
-				OTHER_REZFLAGS = "";
-				PRODUCT_NAME = ATSUIDirectAccessDemo;
-				SECTORDER_FLAGS = "";
-				SKIP_INSTALL = YES;
-				WARNING_CFLAGS = (
-					"-Wmost",
-					"-Wno-four-char-constants",
-					"-Wno-unknown-pragmas",
-				);
-				WRAPPER_EXTENSION = app;
-				ZERO_LINK = NO;
+				ARCHS = "$(NATIVE_ARCH_ACTUAL)";
+				DSTROOT = "/tmp/$(PROJECT_NAME).dst";
+				MACOSX_DEPLOYMENT_TARGET = 10.5;
+				SDKROOT = /Developer/SDKs/MacOSX10.5.sdk;
+				VALID_ARCHS = "ppc7400 ppc970 i386 ppc";
 			};
 			name = Deployment;
 		};
-		BEE96A300C5027F500A904B9 /* Default */ = {
+		BEA160E30B7CD9E9000D6DB0 /* Default */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				FRAMEWORK_SEARCH_PATHS = "";
-				GCC_ENABLE_TRIGRAPHS = NO;
-				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
-				GCC_PRECOMPILE_PREFIX_HEADER = YES;
-				GCC_PREFIX_HEADER = ATSUIDirectAccessDemo_Prefix.pch;
-				GCC_WARN_ABOUT_MISSING_PROTOTYPES = NO;
-				GCC_WARN_FOUR_CHARACTER_CONSTANTS = NO;
-				GCC_WARN_UNKNOWN_PRAGMAS = NO;
-				HEADER_SEARCH_PATHS = "";
-				INFOPLIST_FILE = Info.plist;
-				LIBRARY_SEARCH_PATHS = "";
-				LIBRARY_STYLE = Static;
-				OTHER_CFLAGS = "";
-				OTHER_LDFLAGS = "";
-				OTHER_REZFLAGS = "";
-				PRODUCT_NAME = ATSUIDirectAccessDemo;
-				SECTORDER_FLAGS = "";
-				SKIP_INSTALL = YES;
-				WARNING_CFLAGS = (
-					"-Wmost",
-					"-Wno-four-char-constants",
-					"-Wno-unknown-pragmas",
-				);
-				WRAPPER_EXTENSION = app;
+				DSTROOT = "/tmp/$(PROJECT_NAME).dst";
+				MACOSX_DEPLOYMENT_TARGET = 10.5;
+				SDKROOT = /Developer/SDKs/MacOSX10.5.sdk;
+				VALID_ARCHS = "ppc7400 ppc970 i386 ppc";
 			};
 			name = Default;
 		};
-		BEE96A320C5027F500A904B9 /* Development */ = {
+		BEA160E50B7CD9E9000D6DB0 /* Development */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				MACOSX_DEPLOYMENT_TARGET = 10.4;
-				SDKROOT = /Developer/SDKs/MacOSX10.4u.sdk;
+				ARCHS = "$(NATIVE_ARCH)";
+				COPY_PHASE_STRIP = NO;
+				FRAMEWORK_SEARCH_PATHS = "";
+				GCC_ENABLE_TRIGRAPHS = NO;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = ATSUIDirectAccessDemo_Prefix.pch;
+				GCC_WARN_ABOUT_MISSING_PROTOTYPES = NO;
+				GCC_WARN_FOUR_CHARACTER_CONSTANTS = NO;
+				GCC_WARN_UNKNOWN_PRAGMAS = NO;
+				HEADER_SEARCH_PATHS = "";
+				INFOPLIST_FILE = Info.plist;
+				INSTALL_PATH = $DSTROOT/Developer/Examples/ATSUI/Basics;
+				LIBRARY_SEARCH_PATHS = "";
+				LIBRARY_STYLE = Static;
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = ATSUIDirectAccessDemo;
+				SECTORDER_FLAGS = "";
+				SKIP_INSTALL = NO;
+				WARNING_CFLAGS = (
+					"-Wmost",
+					"-Wno-four-char-constants",
+					"-Wno-unknown-pragmas",
+				);
+				WRAPPER_EXTENSION = app;
 			};
 			name = Development;
 		};
-		BEE96A330C5027F500A904B9 /* Deployment */ = {
+		BEA160E60B7CD9E9000D6DB0 /* Deployment */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				MACOSX_DEPLOYMENT_TARGET = 10.4;
-				SDKROOT = /Developer/SDKs/MacOSX10.4u.sdk;
+				ARCHS = "$(NATIVE_ARCH)";
+				COPY_PHASE_STRIP = YES;
+				FRAMEWORK_SEARCH_PATHS = "";
+				GCC_ENABLE_TRIGRAPHS = NO;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = ATSUIDirectAccessDemo_Prefix.pch;
+				GCC_WARN_ABOUT_MISSING_PROTOTYPES = NO;
+				GCC_WARN_FOUR_CHARACTER_CONSTANTS = NO;
+				GCC_WARN_UNKNOWN_PRAGMAS = NO;
+				HEADER_SEARCH_PATHS = "";
+				INFOPLIST_FILE = Info.plist;
+				INSTALL_PATH = $DSTROOT/Developer/Examples/ATSUI/Basics;
+				LIBRARY_SEARCH_PATHS = "";
+				LIBRARY_STYLE = Static;
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = ATSUIDirectAccessDemo;
+				SECTORDER_FLAGS = "";
+				SKIP_INSTALL = NO;
+				WARNING_CFLAGS = (
+					"-Wmost",
+					"-Wno-four-char-constants",
+					"-Wno-unknown-pragmas",
+				);
+				WRAPPER_EXTENSION = app;
 			};
 			name = Deployment;
 		};
-		BEE96A340C5027F500A904B9 /* Default */ = {
+		BEA160E70B7CD9E9000D6DB0 /* Default */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				MACOSX_DEPLOYMENT_TARGET = 10.4;
-				SDKROOT = /Developer/SDKs/MacOSX10.4u.sdk;
+				ARCHS = "$(NATIVE_ARCH)";
+				FRAMEWORK_SEARCH_PATHS = "";
+				GCC_ENABLE_TRIGRAPHS = NO;
+				GCC_GENERATE_DEBUGGING_SYMBOLS = NO;
+				GCC_PRECOMPILE_PREFIX_HEADER = YES;
+				GCC_PREFIX_HEADER = ATSUIDirectAccessDemo_Prefix.pch;
+				GCC_WARN_ABOUT_MISSING_PROTOTYPES = NO;
+				GCC_WARN_FOUR_CHARACTER_CONSTANTS = NO;
+				GCC_WARN_UNKNOWN_PRAGMAS = NO;
+				HEADER_SEARCH_PATHS = "";
+				INFOPLIST_FILE = Info.plist;
+				INSTALL_PATH = $DSTROOT/Developer/Examples/ATSUI/Basics;
+				LIBRARY_SEARCH_PATHS = "";
+				LIBRARY_STYLE = Static;
+				OTHER_CFLAGS = "";
+				OTHER_LDFLAGS = "";
+				OTHER_REZFLAGS = "";
+				PRODUCT_NAME = ATSUIDirectAccessDemo;
+				SECTORDER_FLAGS = "";
+				SKIP_INSTALL = NO;
+				WARNING_CFLAGS = (
+					"-Wmost",
+					"-Wno-four-char-constants",
+					"-Wno-unknown-pragmas",
+				);
+				WRAPPER_EXTENSION = app;
 			};
 			name = Default;
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		BEE96A2D0C5027F500A904B9 /* Build configuration list for PBXNativeTarget "ATSUIDirectAccessDemo" */ = {
+		BEA160E00B7CD9E9000D6DB0 /* Build configuration list for PBXProject "ATSUIDirectAccessDemo" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				BEE96A2E0C5027F500A904B9 /* Development */,
-				BEE96A2F0C5027F500A904B9 /* Deployment */,
-				BEE96A300C5027F500A904B9 /* Default */,
+				BEA160E10B7CD9E9000D6DB0 /* Development */,
+				BEA160E20B7CD9E9000D6DB0 /* Deployment */,
+				BEA160E30B7CD9E9000D6DB0 /* Default */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Default;
 		};
-		BEE96A310C5027F500A904B9 /* Build configuration list for PBXProject "ATSUIDirectAccessDemo" */ = {
+		BEA160E40B7CD9E9000D6DB0 /* Build configuration list for PBXNativeTarget "ATSUIDirectAccessDemo" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				BEE96A320C5027F500A904B9 /* Development */,
-				BEE96A330C5027F500A904B9 /* Deployment */,
-				BEE96A340C5027F500A904B9 /* Default */,
+				BEA160E50B7CD9E9000D6DB0 /* Development */,
+				BEA160E60B7CD9E9000D6DB0 /* Deployment */,
+				BEA160E70B7CD9E9000D6DB0 /* Default */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Default;
